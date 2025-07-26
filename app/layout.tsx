@@ -19,10 +19,11 @@ export default function RootLayout({
           <head>
             <meta charSet="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <link rel="icon" href="/images/rc.ico" />
             <title>Cantonment Towers Community</title>
             <link rel="manifest" href="/manifest.json" />
             <meta name="theme-color" content="#e11d48" />
-            <link rel="apple-touch-icon" href="/placeholder-logo.png" />
+            <link rel="apple-touch-icon" href="/images/rc.jpeg" />
             <meta name="apple-mobile-web-app-capable" content="yes" />
             <meta name="mobile-web-app-capable" content="yes" />
           </head>

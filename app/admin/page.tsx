@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next"
 "use client"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -327,7 +328,9 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <Analytics />
+      <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -526,6 +529,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

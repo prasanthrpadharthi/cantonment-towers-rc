@@ -1,5 +1,5 @@
-import { Analytics } from "@vercel/analytics/next"
 "use client"
+import { Analytics } from "@vercel/analytics/next"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET all events (admin, paginated)
-router.get('/all', auth, async (req, res) => {
+router.get('/all', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
@@ -29,7 +29,7 @@ router.get('/all', auth, async (req, res) => {
 });
 
 // POST create event
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     console.log('Creating event:', req);
     const event = new Event(req.body);
@@ -41,7 +41,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // PATCH update event
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', async (req, res) => {
   try {
     const event = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!event) return res.status(404).json({ message: 'Event not found' });
@@ -52,7 +52,7 @@ router.patch('/:id', auth, async (req, res) => {
 });
 
 // PATCH disable event (future events only)
-router.patch('/:id/disable', auth, async (req, res) => {
+router.patch('/:id/disable', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ message: 'Event not found' });

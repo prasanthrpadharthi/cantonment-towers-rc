@@ -78,6 +78,7 @@ export function CommunityGallery() {
             {approvedImages.map((image) => (
               <Card
                 key={image.id}
+                id={image.id}
                 onClick={() => setSelectedImage(image)}
               >
                 <div className="relative h-48">

@@ -15,7 +15,7 @@ interface UploadedImage {
   url: string
   caption: string
   uploaderName: string
-  uploadDate: string
+  uploadedAt: string
   status: "pending" | "approved" | "rejected"
 }
 
@@ -46,46 +46,45 @@ export function ImageUploader() {
     setUploadStatus("idle")
 
     try {
-      // Simulate file upload to cloud storage
-      const formData = new FormData()
-      formData.append("file", selectedFile)
-      formData.append("caption", caption)
-      formData.append("uploaderName", uploaderName)
+      // Upload to backend API
+      const formData = new FormData();
+      formData.append("image", selectedFile);
+      formData.append("caption", caption);
+      formData.append("uploaderName", uploaderName);
 
-      // In a real implementation, you would upload to your cloud storage
-      // For demo purposes, we'll simulate the upload
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+      const data = await response.json();
 
       const newImage: UploadedImage = {
-        id: Date.now().toString(),
+        id: data.id,
         filename: selectedFile.name,
-        url: previewUrl || "",
+        url: data.url,
         caption: caption,
         uploaderName: uploaderName,
-        uploadDate: new Date().toISOString(),
+        uploadedAt: new Date().toISOString(),
         status: "pending",
-      }
+      };
 
-      // Store in localStorage for demo (in production, this would be sent to your backend)
-      const existingImages = JSON.parse(localStorage.getItem("communityImages") || "[]")
-      existingImages.push(newImage)
-      localStorage.setItem("communityImages", JSON.stringify(existingImages))
-
-      setUploadStatus("success")
+      setUploadStatus("success");
 
       // Reset form
-      setSelectedFile(null)
-      setCaption("")
-      setUploaderName("")
-      setPreviewUrl(null)
+      setSelectedFile(null);
+      setCaption("");
+      setUploaderName("");
+      setPreviewUrl(null);
 
       // Reset file input
-      const fileInput = document.getElementById("file-upload") as HTMLInputElement
-      if (fileInput) fileInput.value = ""
+      const fileInput = document.getElementById("file-upload") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
     } catch (error) {
-      setUploadStatus("error")
+      setUploadStatus("error");
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
   }
 

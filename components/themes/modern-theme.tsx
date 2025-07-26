@@ -1,17 +1,17 @@
-import { UpcomingEvents } from "@/components/upcoming-events"
-import { SocialFeed } from "@/components/social-feed"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2, Sparkles, Calendar, Users, Heart, Home } from "lucide-react"
-import Image from "next/image"
+import { UpcomingEvents } from "@/components/upcoming-events";
+import { SocialFeed } from "@/components/social-feed";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, Sparkles, Calendar, Users, Heart, Home } from "lucide-react";
+import Image from "next/image";
 
 export function ModernTheme() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Modern Header */}
       <header className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white py-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fillRule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fillOpacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+        <div className="absolute inset-0" width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="none" fillRule="evenodd" fill="#ffffff" fillOpacity="0.05" cx="30" cy="30" r="2" />
         <div className="container mx-auto px-4 relative">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
@@ -49,6 +49,7 @@ export function ModernTheme() {
           </div>
         </div>
       </section>
+      {/* ...existing code... */}
 
       {/* Modern Hero Section */}
       <section className="py-16 bg-white/70 backdrop-blur-sm">
@@ -72,7 +73,7 @@ export function ModernTheme() {
                   <Calendar className="h-5 w-5 mr-2" />
                   Explore Events
                 </Button>
-                <Button variant="outline" className="border-2 px-8 py-3 text-lg bg-transparent">
+                <Button className="border-2 px-8 py-3 text-lg bg-transparent">
                   <Users className="h-5 w-5 mr-2" />
                   Join Community
                 </Button>
@@ -292,5 +293,5 @@ export function ModernTheme() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

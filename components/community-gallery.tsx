@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+
 import { Calendar, User } from "lucide-react"
 
 interface ApprovedImage {
@@ -10,7 +10,7 @@ interface ApprovedImage {
   url: string
   caption: string
   uploaderName: string
-  uploadDate: string
+  uploadedAt: string
   status: "approved"
 }
 
@@ -19,11 +19,15 @@ export function CommunityGallery() {
   const [selectedImage, setSelectedImage] = useState<ApprovedImage | null>(null)
 
   useEffect(() => {
-    // Load approved images from localStorage (in production, this would be an API call)
-    const allImages = JSON.parse(localStorage.getItem("communityImages") || "[]")
-    const approved = allImages.filter((img: any) => img.status === "approved")
-    setApprovedImages(approved)
-  }, [])
+    async function fetchApprovedImages() {
+      const res = await fetch("/api/images/approved?page=1&limit=24");
+      if (res.ok) {
+        const data = await res.json();
+        setApprovedImages(data.images || []);
+      }
+    }
+    fetchApprovedImages();
+  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-SG", {
@@ -63,7 +67,6 @@ export function CommunityGallery() {
             {approvedImages.map((image) => (
               <Card
                 key={image.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => setSelectedImage(image)}
               >
                 <div className="relative h-48">
@@ -72,7 +75,6 @@ export function CommunityGallery() {
                     alt={image.caption}
                     className="w-full h-full object-cover"
                   />
-                  <Badge className="absolute top-2 right-2 bg-green-600">Community</Badge>
                 </div>
                 <CardContent className="p-4">
                   <p className="text-sm text-gray-800 mb-3 line-clamp-2">{image.caption}</p>
@@ -83,7 +85,7 @@ export function CommunityGallery() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      <span>{formatDate(image.uploadDate)}</span>
+                      <span>{formatDate(image.uploadedAt)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -96,7 +98,15 @@ export function CommunityGallery() {
         {selectedImage && (
           <div
             className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            role="button"
+            tabIndex={0}
+            aria-label="Close image modal"
             onClick={() => setSelectedImage(null)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+                setSelectedImage(null);
+              }
+            }}
           >
             <div className="max-w-4xl max-h-full bg-white rounded-lg overflow-hidden">
               <img
@@ -113,7 +123,7 @@ export function CommunityGallery() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{formatDate(selectedImage.uploadDate)}</span>
+                    <span>{formatDate(selectedImage.uploadedAt)}</span>
                   </div>
                 </div>
               </div>

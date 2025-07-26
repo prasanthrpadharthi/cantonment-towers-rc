@@ -9,33 +9,84 @@ import { Badge } from "@/components/ui/badge"
 import { Shield, CheckCircle, XCircle, Clock, Trash2, RotateCcw, User, Calendar, Eye } from "lucide-react"
 
 interface CommunityImage {
-  id: string
-  filename: string
+  _id: string
+  uniqueName: string
   url: string
   caption: string
   uploaderName: string
-  uploadDate: string
+  uploadedAt: string
   status: "pending" | "approved" | "rejected"
 }
+
 
 export default function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
-  const [images, setImages] = useState<CommunityImage[]>([])
   const [selectedImage, setSelectedImage] = useState<CommunityImage | null>(null)
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      loadImages()
-    }
-  }, [isLoggedIn])
+  // Pagination and images state for each status
+  const [pendingImages, setPendingImages] = useState<CommunityImage[]>([])
+  const [pendingPage, setPendingPage] = useState(1)
+  const [pendingTotal, setPendingTotal] = useState(0)
 
-  const loadImages = () => {
-    const storedImages = JSON.parse(localStorage.getItem("communityImages") || "[]")
-    setImages(storedImages)
-  }
+  const [approvedImages, setApprovedImages] = useState<CommunityImage[]>([])
+  const [approvedPage, setApprovedPage] = useState(1)
+  const [approvedTotal, setApprovedTotal] = useState(0)
+
+  const [rejectedImages, setRejectedImages] = useState<CommunityImage[]>([])
+  const [rejectedPage, setRejectedPage] = useState(1)
+  const [rejectedTotal, setRejectedTotal] = useState(0)
+
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const PAGE_SIZE = 12;
+
+  // Fetch images for a given status and page
+  const fetchImages = async (status: 'pending' | 'approved' | 'rejected', page: number) => {
+    try {
+      const res = await fetch(`/api/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`);
+      if (!res.ok) throw new Error('Failed to fetch images');
+      const data = await res.json();
+      if (status === 'pending') {
+        setPendingImages(data.images);
+        setPendingTotal(data.total || 0);
+      } else if (status === 'approved') {
+        setApprovedImages(data.images);
+        setApprovedTotal(data.total || 0);
+      } else if (status === 'rejected') {
+        setRejectedImages(data.images);
+        setRejectedTotal(data.total || 0);
+      }
+    } catch (err) {
+      if (status === 'pending') {
+        setPendingImages([]);
+        setPendingTotal(0);
+      } else if (status === 'approved') {
+        setApprovedImages([]);
+        setApprovedTotal(0);
+      } else if (status === 'rejected') {
+        setRejectedImages([]);
+        setRejectedTotal(0);
+      }
+    }
+  };
+
+  // Fetch images when logged in or page/tab changes
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    fetchImages('pending', pendingPage);
+  }, [isLoggedIn, pendingPage]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    fetchImages('approved', approvedPage);
+  }, [isLoggedIn, approvedPage]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    fetchImages('rejected', rejectedPage);
+  }, [isLoggedIn, rejectedPage]);
 
   const handleLogin = () => {
     if (username === "admin" && password === "admin") {
@@ -46,27 +97,62 @@ export default function AdminDashboard() {
     }
   }
 
-  const updateImageStatus = (imageId: string, newStatus: "approved" | "rejected" | "pending") => {
-    const updatedImages = images.map((img) => (img.id === imageId ? { ...img, status: newStatus } : img))
-    setImages(updatedImages)
-    localStorage.setItem("communityImages", JSON.stringify(updatedImages))
-  }
 
+  const updateImageStatus = async (imageId: string, newStatus: "approved" | "rejected" | "pending") => {
+    try {
+      const res = await fetch(`/api/images/${imageId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      // After update, refresh the current tab's images
+      if (activeTab === 'pending') {
+        fetchImages('pending', pendingPage);
+      } else if (activeTab === 'approved') {
+        fetchImages('approved', approvedPage);
+      } else if (activeTab === 'rejected') {
+        fetchImages('rejected', rejectedPage);
+      }
+    } catch (err) {
+      // Optionally show error
+    }
+  };
+
+  // Optionally implement delete API call if needed
   const deleteImage = (imageId: string) => {
-    const updatedImages = images.filter((img) => img.id !== imageId)
-    setImages(updatedImages)
-    localStorage.setItem("communityImages", JSON.stringify(updatedImages))
-  }
+    // Optionally call backend to delete
+    if (activeTab === 'pending') {
+      setPendingImages((prev) => prev.filter((img) => img._id !== imageId));
+      setPendingTotal((prev) => Math.max(0, prev - 1));
+    } else if (activeTab === 'approved') {
+      setApprovedImages((prev) => prev.filter((img) => img._id !== imageId));
+      setApprovedTotal((prev) => Math.max(0, prev - 1));
+    } else if (activeTab === 'rejected') {
+      setRejectedImages((prev) => prev.filter((img) => img._id !== imageId));
+      setRejectedTotal((prev) => Math.max(0, prev - 1));
+    }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-SG", {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      // Try to parse if it's a MongoDB date object
+      try {
+        const parsed = new Date(Number(dateString));
+        if (!isNaN(parsed.getTime())) return parsed.toLocaleString("en-SG");
+      } catch {}
+      return "-";
+    }
+    return date.toLocaleString("en-SG", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -111,7 +197,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>{formatDate(image.uploadDate)}</span>
+            <span>{formatDate(image.uploadedAt)}</span>
           </div>
         </div>
 
@@ -125,7 +211,7 @@ export default function AdminDashboard() {
             <>
               <Button
                 size="sm"
-                onClick={() => updateImageStatus(image.id, "approved")}
+                onClick={() => updateImageStatus(image._id, "approved")}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 <CheckCircle className="h-3 w-3 mr-1" />
@@ -133,7 +219,7 @@ export default function AdminDashboard() {
               </Button>
               <Button
                 size="sm"
-                onClick={() => updateImageStatus(image.id, "rejected")}
+                onClick={() => updateImageStatus(image._id, "rejected")}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 <XCircle className="h-3 w-3 mr-1" />
@@ -145,7 +231,7 @@ export default function AdminDashboard() {
           {image.status === "approved" && (
             <Button
               size="sm"
-              onClick={() => updateImageStatus(image.id, "rejected")}
+              onClick={() => updateImageStatus(image._id, "rejected")}
               variant="outline"
               className="text-red-600 border-red-600 hover:bg-red-50"
             >
@@ -157,7 +243,7 @@ export default function AdminDashboard() {
           {image.status === "rejected" && (
             <Button
               size="sm"
-              onClick={() => updateImageStatus(image.id, "pending")}
+              onClick={() => updateImageStatus(image._id, "pending")}
               variant="outline"
               className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
             >
@@ -168,7 +254,7 @@ export default function AdminDashboard() {
 
           <Button
             size="sm"
-            onClick={() => deleteImage(image.id)}
+            onClick={() => deleteImage(image._id)}
             variant="outline"
             className="text-red-600 border-red-600 hover:bg-red-50"
           >
@@ -177,7 +263,7 @@ export default function AdminDashboard() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 
   if (!isLoggedIn) {
     return (
@@ -221,9 +307,24 @@ export default function AdminDashboard() {
     )
   }
 
-  const pendingImages = images.filter((img) => img.status === "pending")
-  const approvedImages = images.filter((img) => img.status === "approved")
-  const rejectedImages = images.filter((img) => img.status === "rejected")
+
+
+  // Pagination controls
+  const renderPagination = (page: number, total: number, setPage: (p: number) => void) => {
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex justify-center gap-2 mt-6">
+        <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>
+          Prev
+        </Button>
+        <span className="px-2 text-sm">Page {page} of {totalPages}</span>
+        <Button size="sm" variant="outline" disabled={page === totalPages} onClick={() => setPage(page + 1)}>
+          Next
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -282,19 +383,19 @@ export default function AdminDashboard() {
         </div>
 
         {/* Image Management Tabs */}
-        <Tabs defaultValue="pending" className="space-y-6">
+        <Tabs defaultValue="pending" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="pending" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Pending ({pendingImages.length})
+              Pending ({pendingTotal})
             </TabsTrigger>
             <TabsTrigger value="approved" className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
-              Approved ({approvedImages.length})
+              Approved ({approvedTotal})
             </TabsTrigger>
             <TabsTrigger value="rejected" className="flex items-center gap-2">
               <XCircle className="h-4 w-4" />
-              Rejected ({rejectedImages.length})
+              Rejected ({rejectedTotal})
             </TabsTrigger>
           </TabsList>
 
@@ -306,11 +407,14 @@ export default function AdminDashboard() {
                 <p className="text-gray-500">All images have been reviewed!</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pendingImages.map((image) => (
-                  <ImageCard key={image.id} image={image} />
-                ))}
-              </div>
+              <>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {pendingImages.map((image) => (
+                    <ImageCard key={image._id} image={image} />
+                  ))}
+                </div>
+                {renderPagination(pendingPage, pendingTotal, setPendingPage)}
+              </>
             )}
           </TabsContent>
 
@@ -322,11 +426,14 @@ export default function AdminDashboard() {
                 <p className="text-gray-500">Approved images will appear here.</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {approvedImages.map((image) => (
-                  <ImageCard key={image.id} image={image} />
-                ))}
-              </div>
+              <>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {approvedImages.map((image) => (
+                    <ImageCard key={image._id} image={image} />
+                  ))}
+                </div>
+                {renderPagination(approvedPage, approvedTotal, setApprovedPage)}
+              </>
             )}
           </TabsContent>
 
@@ -338,11 +445,14 @@ export default function AdminDashboard() {
                 <p className="text-gray-500">Rejected images will appear here.</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {rejectedImages.map((image) => (
-                  <ImageCard key={image.id} image={image} />
-                ))}
-              </div>
+              <>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {rejectedImages.map((image) => (
+                    <ImageCard key={image._id} image={image} />
+                  ))}
+                </div>
+                {renderPagination(rejectedPage, rejectedTotal, setRejectedPage)}
+              </>
             )}
           </TabsContent>
         </Tabs>
@@ -372,7 +482,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>{formatDate(selectedImage.uploadDate)}</span>
+                  <span>{formatDate(selectedImage.uploadedAt)}</span>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -380,7 +490,7 @@ export default function AdminDashboard() {
                   <>
                     <Button
                       onClick={() => {
-                        updateImageStatus(selectedImage.id, "approved")
+                        updateImageStatus(selectedImage._id, "approved")
                         setSelectedImage(null)
                       }}
                       className="bg-green-600 hover:bg-green-700"
@@ -390,7 +500,7 @@ export default function AdminDashboard() {
                     </Button>
                     <Button
                       onClick={() => {
-                        updateImageStatus(selectedImage.id, "rejected")
+                        updateImageStatus(selectedImage._id, "rejected")
                         setSelectedImage(null)
                       }}
                       className="bg-red-600 hover:bg-red-700"
@@ -402,7 +512,7 @@ export default function AdminDashboard() {
                 )}
                 <Button
                   onClick={() => {
-                    deleteImage(selectedImage.id)
+                    deleteImage(selectedImage._id)
                     setSelectedImage(null)
                   }}
                   variant="outline"

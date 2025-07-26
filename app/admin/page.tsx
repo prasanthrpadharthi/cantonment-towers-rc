@@ -7,16 +7,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Shield, CheckCircle, XCircle, Clock, Trash2, RotateCcw, User, Calendar, Eye } from "lucide-react"
+import { Shield, CheckCircle, XCircle, Clock, Trash2, RotateCcw, User, Calendar, Eye, RefreshCw, Loader2 } from "lucide-react"
 
 interface CommunityImage {
   _id: string
   uniqueName: string
   url: string
   caption: string
-  uploaderName: string
+  uploader: string
   uploadedAt: string
-  status: "pending" | "approved" | "rejected"
+  status: "pending" | "approved" | "rejected" | "blocked"
+  blockComment?: string
 }
 
 
@@ -40,11 +41,19 @@ export default function AdminDashboard() {
   const [rejectedPage, setRejectedPage] = useState(1)
   const [rejectedTotal, setRejectedTotal] = useState(0)
 
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [blockedImages, setBlockedImages] = useState<CommunityImage[]>([])
+  const [blockedPage, setBlockedPage] = useState(1)
+  const [blockedTotal, setBlockedTotal] = useState(0)
+  const [blockModal, setBlockModal] = useState<{ open: boolean, image: CommunityImage | null }>({ open: false, image: null })
+  const [blockComment, setBlockComment] = useState("")
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'blocked'>('pending')
+  const [isLoading, setIsLoading] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const PAGE_SIZE = 12;
 
   // Fetch images for a given status and page
-  const fetchImages = async (status: 'pending' | 'approved' | 'rejected', page: number) => {
+  const fetchImages = async (status: 'pending' | 'approved' | 'rejected' | 'blocked', page: number, showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const apiBase = backendUrl ? backendUrl : '';
@@ -60,6 +69,9 @@ export default function AdminDashboard() {
       } else if (status === 'rejected') {
         setRejectedImages(data.images);
         setRejectedTotal(data.total || 0);
+      } else if (status === 'blocked') {
+        setBlockedImages(data.images);
+        setBlockedTotal(data.total || 0);
       }
     } catch (err) {
       if (status === 'pending') {
@@ -71,25 +83,32 @@ export default function AdminDashboard() {
       } else if (status === 'rejected') {
         setRejectedImages([]);
         setRejectedTotal(0);
+      } else if (status === 'blocked') {
+        setBlockedImages([]);
+        setBlockedTotal(0);
       }
+    } finally {
+      if (showLoader) setIsLoading(false);
     }
+  };
+
+  // Fetch all tabs
+  const refreshAllTabs = async () => {
+    setIsLoading(true);
+    await Promise.all([
+      fetchImages('pending', pendingPage, false),
+      fetchImages('approved', approvedPage, false),
+      fetchImages('rejected', rejectedPage, false),
+      fetchImages('blocked', blockedPage, false),
+    ]);
+    setIsLoading(false);
   };
 
   // Fetch images when logged in or page/tab changes
   useEffect(() => {
     if (!isLoggedIn) return;
-    fetchImages('pending', pendingPage);
-  }, [isLoggedIn, pendingPage]);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    fetchImages('approved', approvedPage);
-  }, [isLoggedIn, approvedPage]);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    fetchImages('rejected', rejectedPage);
-  }, [isLoggedIn, rejectedPage]);
+    refreshAllTabs();
+  }, [isLoggedIn, pendingPage, approvedPage, rejectedPage, blockedPage]);
 
   const handleLogin = () => {
     if (username === "admin" && password === "admin") {
@@ -102,6 +121,7 @@ export default function AdminDashboard() {
 
 
   const updateImageStatus = async (imageId: string, newStatus: "approved" | "rejected" | "pending") => {
+    setIsActionLoading(true);
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const apiBase = backendUrl ? backendUrl : '';
@@ -111,31 +131,38 @@ export default function AdminDashboard() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error("Failed to update status");
-      // After update, refresh the current tab's images
-      if (activeTab === 'pending') {
-        fetchImages('pending', pendingPage);
-      } else if (activeTab === 'approved') {
-        fetchImages('approved', approvedPage);
-      } else if (activeTab === 'rejected') {
-        fetchImages('rejected', rejectedPage);
-      }
+      // After update, refresh all tabs
+      await refreshAllTabs();
     } catch (err) {
       // Optionally show error
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
   // Optionally implement delete API call if needed
-  const deleteImage = (imageId: string) => {
-    // Optionally call backend to delete
-    if (activeTab === 'pending') {
-      setPendingImages((prev) => prev.filter((img) => img._id !== imageId));
-      setPendingTotal((prev) => Math.max(0, prev - 1));
-    } else if (activeTab === 'approved') {
-      setApprovedImages((prev) => prev.filter((img) => img._id !== imageId));
-      setApprovedTotal((prev) => Math.max(0, prev - 1));
-    } else if (activeTab === 'rejected') {
-      setRejectedImages((prev) => prev.filter((img) => img._id !== imageId));
-      setRejectedTotal((prev) => Math.max(0, prev - 1));
+  const blockImage = (image: CommunityImage) => {
+    setBlockModal({ open: true, image });
+    setBlockComment("");
+  };
+
+  const confirmBlockImage = async () => {
+    if (!blockModal.image) return;
+    setIsActionLoading(true);
+    try {
+      const res = await fetch(`/api/images/${blockModal.image._id}/block`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: blockComment }),
+      });
+      if (!res.ok) throw new Error("Failed to block image");
+      setBlockModal({ open: false, image: null });
+      setBlockComment("");
+      await refreshAllTabs();
+    } catch (err) {
+      // Optionally show error
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -198,7 +225,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
           <div className="flex items-center gap-1">
             <User className="h-3 w-3" />
-            <span>{image.uploaderName}</span>
+            <span>{image.uploader}</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
@@ -259,7 +286,7 @@ export default function AdminDashboard() {
 
           <Button
             size="sm"
-            onClick={() => deleteImage(image._id)}
+            onClick={() => blockImage(image)}
             variant="outline"
             className="text-red-600 border-red-600 hover:bg-red-50"
           >
@@ -335,6 +362,12 @@ export default function AdminDashboard() {
     <>
       <Analytics />
       <div className="min-h-screen bg-gray-50">
+        {/* Global Loader */}
+        {(isLoading || isActionLoading) && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+          </div>
+        )}
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -342,14 +375,19 @@ export default function AdminDashboard() {
               <Shield className="h-6 w-6 text-blue-600" />
               Community Gallery Admin
             </h1>
-            <Button onClick={() => setIsLoggedIn(false)} variant="outline">
-              Logout
-            </Button>
+            <div className="flex gap-2 items-center">
+              <a href="/admin/events" className="text-blue-600 font-medium hover:underline">Events</a>
+              <Button onClick={refreshAllTabs} variant="outline" size="sm" disabled={isLoading || isActionLoading}>
+                <RefreshCw className={isLoading ? "animate-spin h-4 w-4 mr-2" : "h-4 w-4 mr-2"} />
+                Refresh
+              </Button>
+              <Button onClick={() => setIsLoggedIn(false)} variant="outline">
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
+        </header>
         {/* Stats */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
@@ -391,10 +429,14 @@ export default function AdminDashboard() {
 
         {/* Image Management Tabs */}
         <Tabs defaultValue="pending" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="pending" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Pending ({pendingTotal})
+            </TabsTrigger>
+            <TabsTrigger value="blocked" className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              Blocked ({blockedTotal})
             </TabsTrigger>
             <TabsTrigger value="approved" className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
@@ -462,78 +504,129 @@ export default function AdminDashboard() {
               </>
             )}
           </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Image Preview Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="max-w-4xl max-h-full bg-white rounded-lg overflow-hidden">
-            <img
-              src={selectedImage.url || "/placeholder.svg"}
-              alt={selectedImage.caption}
-              className="w-full h-auto max-h-[70vh] object-contain"
+          <TabsContent value="blocked">
+            {blockedImages.length === 0 ? (
+              <div className="text-center py-12">
+                <Trash2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No blocked images</h3>
+                <p className="text-gray-500">Blocked images will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {blockedImages.map((image) => (
+                  <Card key={image._id} className="overflow-hidden border-red-400 border-2">
+                    <div className="relative h-48">
+                      <img src={image.url || "/placeholder.svg"} alt={image.caption} className="w-full h-full object-cover" />
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="outline" className="text-red-600 border-red-600">Blocked</Badge>
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-800 mb-3 line-clamp-2">{image.caption}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          <span>{image.uploader}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(image.uploadedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-red-700 mt-2">
+                        <strong>Block Reason:</strong> {image.blockComment || "-"}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+            {renderPagination(blockedPage, blockedTotal, setBlockedPage)}
+          </TabsContent>
+      {/* Block Modal */}
+      {blockModal.open && blockModal.image && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-4">Block Image</h3>
+            <p className="mb-2">Please provide a reason for blocking this image:</p>
+            <textarea
+              className="w-full border rounded p-2 mb-4"
+              rows={3}
+              value={blockComment}
+              onChange={e => setBlockComment(e.target.value)}
+              placeholder="Enter reason for blocking..."
+              autoFocus
             />
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">{selectedImage.caption}</h3>
-                {getStatusBadge(selectedImage.status)}
-              </div>
-              <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>Uploaded by {selectedImage.uploaderName}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDate(selectedImage.uploadedAt)}</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {selectedImage.status === "pending" && (
-                  <>
-                    <Button
-                      onClick={() => {
-                        updateImageStatus(selectedImage._id, "approved")
-                        setSelectedImage(null)
-                      }}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Approve
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        updateImageStatus(selectedImage._id, "rejected")
-                        setSelectedImage(null)
-                      }}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Reject
-                    </Button>
-                  </>
-                )}
-                <Button
-                  onClick={() => {
-                    deleteImage(selectedImage._id)
-                    setSelectedImage(null)
-                  }}
-                  variant="outline"
-                  className="text-red-600 border-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setBlockModal({ open: false, image: null })}>Cancel</Button>
+              <Button onClick={confirmBlockImage} disabled={isActionLoading || !blockComment.trim()} className="bg-red-600 hover:bg-red-700 text-white">
+                {isActionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Block
+              </Button>
             </div>
           </div>
         </div>
       )}
+      </Tabs>
+    </div>
+
+    {/* Image Preview Modal */}
+    {selectedImage && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+        onClick={() => setSelectedImage(null)}
+      >
+        <div className="max-w-4xl max-h-full bg-white rounded-lg overflow-hidden">
+          <img
+            src={selectedImage.url || "/placeholder.svg"}
+            alt={selectedImage.caption}
+            className="w-full h-auto max-h-[70vh] object-contain"
+          />
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">{selectedImage.caption}</h3>
+              {getStatusBadge(selectedImage.status)}
+            </div>
+            <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span>Uploaded by {selectedImage.uploader}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>{formatDate(selectedImage.uploadedAt)}</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {selectedImage.status === "pending" && (
+                <>
+                  <Button
+                    onClick={() => {
+                      updateImageStatus(selectedImage._id, "approved")
+                      setSelectedImage(null)
+                    }}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      updateImageStatus(selectedImage._id, "rejected")
+                      setSelectedImage(null)
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-    </>
-  )
+    )}
+  </>
+  );
 }

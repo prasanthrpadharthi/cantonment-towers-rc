@@ -14,10 +14,12 @@ router.post('/', upload.single('image'), async (req, res) => {
     const result = await cloudinary.uploader.upload(req.file.path);
     // Generate a unique name
     const uniqueName = uuidv4();
+    console.log('Image uploaded:', req);
     // Save to MongoDB
     const imageDoc = await Image.create({
       url: result.secure_url,
-      uploader: req.user ? req.user.id : null,
+      uploader: req.body ? req.body.uploaderName : '',
+      caption: req.body ? req.body.caption : '',
       uniqueName
     });
     res.json({ id: imageDoc._id, uniqueName, url: result.secure_url });

@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 import { Calendar, User } from "lucide-react"
@@ -9,7 +10,7 @@ interface ApprovedImage {
   filename: string
   url: string
   caption: string
-  uploaderName: string
+  uploader: string
   uploadedAt: string
   status: "approved"
 }
@@ -17,16 +18,19 @@ interface ApprovedImage {
 export function CommunityGallery() {
   const [approvedImages, setApprovedImages] = useState<ApprovedImage[]>([])
   const [selectedImage, setSelectedImage] = useState<ApprovedImage | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     async function fetchApprovedImages() {
+      setIsLoading(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const apiBase = backendUrl ? backendUrl : '';
-      const res = await fetch(`/api/images/approved?page=1&limit=24`);
+      const res = await fetch(`/api/images/approved?page=1&limit=24&status=approved`);
       if (res.ok) {
         const data = await res.json();
         setApprovedImages(data.images || []);
       }
+      setIsLoading(false);
     }
     fetchApprovedImages();
   }, []);
@@ -41,6 +45,11 @@ export function CommunityGallery() {
 
   return (
     <section className="py-12 bg-white">
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+        </div>
+      )}
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Community Photo Gallery</h2>
@@ -83,7 +92,7 @@ export function CommunityGallery() {
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <div className="flex items-center gap-1">
                       <User className="h-3 w-3" />
-                      <span>{image.uploaderName}</span>
+                      <span>{image.uploader}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
@@ -121,7 +130,7 @@ export function CommunityGallery() {
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    <span>Shared by {selectedImage.uploaderName}</span>
+                    <span>Shared by {selectedImage.uploader}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />

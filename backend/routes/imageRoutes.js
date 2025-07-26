@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -5,6 +6,8 @@ const upload = multer({ dest: 'uploads/' });
 const auth = require('../middleware/authMiddleware');
 
 const { uploadImage, getAllImages, updateImageStatus } = require('../controllers/imageController');
+const mongoose = require('mongoose');
+const Image = require('../models/Image');
 
 router.post('/upload', auth, upload.single('image'), uploadImage);
 router.get('/', auth, getAllImages);
@@ -21,6 +24,24 @@ router.patch('/:id/status', async (req, res) => {
     res.json(image);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update status', error: err.message });
+  }
+});
+
+// PATCH /api/images/:id/block - block an image with a comment
+router.patch('/:id/block', async (req, res) => {
+  try {
+    console.log('Blocking image:', req.params.id);
+    const { comment } = req.body;
+    const imageId = mongoose.Types.ObjectId.isValid(req.params.id) ? new mongoose.Types.ObjectId(req.params.id) : req.params.id;
+    const image = await Image.findByIdAndUpdate(
+        imageId,
+        { status: 'blocked', blockComment: comment || '' },
+        { new: true }
+    );
+    if (!image) return res.status(404).json({ message: 'Image not found' });
+    res.json(image);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to block image', error: err.message });
   }
 });
 

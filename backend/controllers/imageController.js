@@ -3,11 +3,13 @@ const cloudinary = require('../utils/cloudinary');
 
 exports.uploadImage = async (req, res) => {
   const file = req.file;
+  console.log('Uploading image:', req);
   if (!file) return res.status(400).json({ message: 'No file uploaded' });
   const result = await cloudinary.uploader.upload(file.path);
   const image = await Image.create({
     url: result.secure_url,
-    uploader: req.user.id
+    uploader: req.body ? req.body.uploaderName : '',
+    caption: req.body ? req.body.caption : ''
   });
   res.json(image);
 };

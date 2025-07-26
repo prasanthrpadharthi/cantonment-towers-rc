@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 const imageSchema = new mongoose.Schema({
-  url: String,
-  uploader: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  uniqueName: { type: String, required: true, unique: true },
+  url: { type: String, required: true },
+  caption: { type: String, required: true },
+  uploader: { type: String, required: true },
   uploadedAt: { type: Date, default: Date.now },
-  uniqueName: { type: String, unique: true }
+  status: { type: String, enum: ['pending', 'approved', 'rejected', 'blocked'], default: 'pending' },
+  blockComment: { type: String, default: "" },
 });
 module.exports = mongoose.model('Image', imageSchema);

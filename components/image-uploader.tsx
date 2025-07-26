@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react"
+import imageCompression from "browser-image-compression"
 import type React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -26,21 +27,48 @@ export function ImageUploader() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle")
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      setSelectedFile(file)
-      const url = URL.createObjectURL(file)
+      let finalFile = file;
+      if (file.size > 2 * 1024 * 1024) { // >2MB
+        try {
+          const compressed = await imageCompression(file, {
+            maxSizeMB: 2,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+            initialQuality: 0.8,
+          });
+          finalFile = new File([compressed], file.name, { type: compressed.type });
+        } catch (err) {
+          // If compression fails, fallback to original file
+        }
+      }
+      setSelectedFile(finalFile)
+      const url = URL.createObjectURL(finalFile)
       setPreviewUrl(url)
     }
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || !caption.trim() || !uploaderName.trim()) {
-      setUploadStatus("error")
-      return
+    if (!selectedFile) {
+      setUploadStatus("error");
+      setValidationError(null);
+      return;
     }
+    if (caption.trim().length < 2) {
+      setValidationError("Photo caption must be at least 2 characters.");
+      setUploadStatus("error");
+      return;
+    }
+    if (uploaderName.trim().length < 2) {
+      setValidationError("Your name must be at least 2 characters.");
+      setUploadStatus("error");
+      return;
+    }
+    setValidationError(null);
 
     setIsUploading(true)
     setUploadStatus("idle")
@@ -164,7 +192,7 @@ export function ImageUploader() {
                 />
               </div>
 
-              {/* Upload Status */}
+              {/* Upload Status & Validation */}
               {uploadStatus === "success" && (
                 <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <CheckCircle className="h-5 w-5 text-green-600" />
@@ -174,10 +202,12 @@ export function ImageUploader() {
                 </div>
               )}
 
-              {uploadStatus === "error" && (
+              {(uploadStatus === "error" || validationError) && (
                 <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <AlertCircle className="h-5 w-5 text-red-600" />
-                  <span className="text-red-800">Please fill in all required fields and select an image.</span>
+                  <span className="text-red-800">
+                    {validationError ? validationError : "Please fill in all required fields and select an image."}
+                  </span>
                 </div>
               )}
 

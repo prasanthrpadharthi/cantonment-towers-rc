@@ -54,7 +54,7 @@ export function ImageUploader() {
 
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const response = await fetch(`${backendUrl}/upload`, {
+      const response = await fetch(`/api/upload`, {
         method: "POST",
         body: formData,
       });

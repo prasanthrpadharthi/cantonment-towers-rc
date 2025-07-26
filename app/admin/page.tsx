@@ -48,7 +48,7 @@ export default function AdminDashboard() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const apiBase = backendUrl ? backendUrl : '';
-      const res = await fetch(`${apiBase}/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`);
+      const res = await fetch(`/api/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`);
       if (!res.ok) throw new Error('Failed to fetch images');
       const data = await res.json();
       if (status === 'pending') {
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const apiBase = backendUrl ? backendUrl : '';
-      const res = await fetch(`${apiBase}/images/${imageId}/status`, {
+      const res = await fetch(`/api/images/${imageId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),

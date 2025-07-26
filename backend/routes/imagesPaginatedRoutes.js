@@ -6,6 +6,7 @@ const auth = require('../middleware/authMiddleware');
 // GET /api/images-paginated?page=1&limit=12
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching paginated images');
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;

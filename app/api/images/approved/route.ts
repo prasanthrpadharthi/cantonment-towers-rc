@@ -6,9 +6,10 @@ export async function GET(req: NextRequest) {
   const limit = searchParams.get("limit") || "12";
   const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || '';
   let url = '';
+  console.log("Fetching approved images with backendBase:", backendBase);
   if (backendBase) {
     const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    url = `${backendBase}/api/images/approved${query}`;
+    url = `${backendBase}/api/images-paginated${query}`;
   } else {
     const backendUrl = new URL("/api/images-paginated", "http://localhost:5000");
     backendUrl.searchParams.set("page", page);
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
     backendUrl.searchParams.set("status", "approved");
     url = backendUrl.toString();
   }
+  console.log("Final URL for fetching approved images:", url);
   const backendRes = await fetch(url, { method: "GET" });
   const data = await backendRes.json();
   return new Response(JSON.stringify(data), {

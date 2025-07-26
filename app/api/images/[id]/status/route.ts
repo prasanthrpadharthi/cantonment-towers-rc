@@ -3,7 +3,8 @@ import { NextRequest } from "next/server";
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
   const body = await req.json();
-  const backendRes = await fetch(`http://localhost:5000/api/images/${id}/status`, {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+  const backendRes = await fetch(`${backendUrl}/api/images/${id}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

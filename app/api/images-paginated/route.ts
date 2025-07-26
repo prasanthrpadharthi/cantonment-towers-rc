@@ -6,7 +6,8 @@ export async function GET(req: NextRequest) {
   const limit = searchParams.get("limit") || "12";
   const status = searchParams.get("status");
 
-  const backendUrl = new URL("http://localhost:5000/api/images-paginated");
+  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+  const backendUrl = new URL(`${backendBase}/api/images-paginated`);
   backendUrl.searchParams.set("page", page);
   backendUrl.searchParams.set("limit", limit);
   if (status) backendUrl.searchParams.set("status", status);

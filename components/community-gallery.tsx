@@ -20,7 +20,9 @@ export function CommunityGallery() {
 
   useEffect(() => {
     async function fetchApprovedImages() {
-      const res = await fetch("/api/images/approved?page=1&limit=24");
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const apiBase = backendUrl ? backendUrl : '';
+      const res = await fetch(`${apiBase}/images/approved?page=1&limit=24`);
       if (res.ok) {
         const data = await res.json();
         setApprovedImages(data.images || []);

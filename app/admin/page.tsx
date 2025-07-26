@@ -46,7 +46,9 @@ export default function AdminDashboard() {
   // Fetch images for a given status and page
   const fetchImages = async (status: 'pending' | 'approved' | 'rejected', page: number) => {
     try {
-      const res = await fetch(`/api/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const apiBase = backendUrl ? backendUrl : '';
+      const res = await fetch(`${apiBase}/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`);
       if (!res.ok) throw new Error('Failed to fetch images');
       const data = await res.json();
       if (status === 'pending') {
@@ -101,7 +103,9 @@ export default function AdminDashboard() {
 
   const updateImageStatus = async (imageId: string, newStatus: "approved" | "rejected" | "pending") => {
     try {
-      const res = await fetch(`/api/images/${imageId}/status`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const apiBase = backendUrl ? backendUrl : '';
+      const res = await fetch(`${apiBase}/images/${imageId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),

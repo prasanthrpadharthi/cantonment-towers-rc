@@ -52,7 +52,9 @@ export function ImageUploader() {
       formData.append("caption", caption);
       formData.append("uploaderName", uploaderName);
 
-      const response = await fetch("/api/upload", {
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+      const response = await fetch(`${backendUrl}/upload`, {
         method: "POST",
         body: formData,
       });

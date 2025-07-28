@@ -3,7 +3,7 @@ const router = express.Router();
 const Event = require('../models/Event');
 const auth = require('../middleware/authMiddleware');
 
-// GET /api/events?from=YYYY-MM-DD
+// GET /api/events?from=YYYY-MM-DD (public)
 router.get('/', async (req, res) => {
   try {
     const from = req.query.from ? new Date(req.query.from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET all events (admin, paginated)
+// GET all events (admin, paginated) - protected
 router.get('/all', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -28,8 +28,8 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// POST create event
-router.post('/', async (req, res) => {
+// POST create event - protected
+router.post('/', auth, async (req, res) => {
   try {
     console.log('Creating event:', req);
     const event = new Event(req.body);
@@ -40,8 +40,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH update event
-router.patch('/:id', async (req, res) => {
+// PATCH update event - protected
+router.patch('/:id', auth, async (req, res) => {
   try {
     const event = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!event) return res.status(404).json({ message: 'Event not found' });
@@ -51,8 +51,8 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// PATCH disable event (future events only)
-router.patch('/:id/disable', async (req, res) => {
+// PATCH disable event (future events only) - protected
+router.patch('/:id/disable', auth, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
@@ -62,6 +62,17 @@ router.patch('/:id/disable', async (req, res) => {
     res.json(event);
   } catch (err) {
     res.status(400).json({ message: 'Failed to disable event', error: err.message });
+  }
+});
+
+// PATCH /api/events/update/:id - update event (admin only, for frontend compatibility)
+router.patch('/update/:id', auth, async (req, res) => {
+  try {
+    const event = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+    res.json(event);
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to update event', error: err.message });
   }
 });
 

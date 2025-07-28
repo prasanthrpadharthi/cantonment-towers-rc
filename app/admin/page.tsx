@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
+  const [token, setToken] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<CommunityImage | null>(null)
 
   // Pagination and images state for each status
@@ -55,9 +56,9 @@ export default function AdminDashboard() {
   const fetchImages = async (status: 'pending' | 'approved' | 'rejected' | 'blocked', page: number, showLoader = true) => {
     if (showLoader) setIsLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const apiBase = backendUrl ? backendUrl : '';
-      const res = await fetch(`/api/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`);
+      const res = await fetch(`/api/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) throw new Error('Failed to fetch images');
       const data = await res.json();
       if (status === 'pending') {
@@ -106,16 +107,36 @@ export default function AdminDashboard() {
 
   // Fetch images when logged in or page/tab changes
   useEffect(() => {
-    if (!isLoggedIn) return;
-    refreshAllTabs();
-  }, [isLoggedIn, pendingPage, approvedPage, rejectedPage, blockedPage]);
+    const stored = localStorage.getItem("adminToken");
+    if (stored) {
+      setToken(stored);
+      setIsLoggedIn(true);
+    }
+  }, []);
 
-  const handleLogin = () => {
-    if (username === "admin" && password === "admin") {
-      setIsLoggedIn(true)
-      setLoginError("")
-    } else {
-      setLoginError("Invalid credentials. Use 'admin' for both username and password.")
+  useEffect(() => {
+    if (!isLoggedIn || !token) return;
+    refreshAllTabs();
+  }, [isLoggedIn, token, pendingPage, approvedPage, rejectedPage, blockedPage]);
+
+  const handleLogin = async () => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToken(data.token);
+        setIsLoggedIn(true);
+        setLoginError("");
+        localStorage.setItem("adminToken", data.token);
+      } else {
+        setLoginError("Invalid credentials.");
+      }
+    } catch {
+      setLoginError("Login failed. Please try again.");
     }
   }
 
@@ -123,15 +144,13 @@ export default function AdminDashboard() {
   const updateImageStatus = async (imageId: string, newStatus: "approved" | "rejected" | "pending") => {
     setIsActionLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const apiBase = backendUrl ? backendUrl : '';
       const res = await fetch(`/api/images/${imageId}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
         body: JSON.stringify({ status: newStatus }),
       });
+      console.log("Updating image status:", imageId, newStatus, token);
       if (!res.ok) throw new Error("Failed to update status");
-      // After update, refresh all tabs
       await refreshAllTabs();
     } catch (err) {
       // Optionally show error
@@ -152,7 +171,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`/api/images/${blockModal.image._id}/block`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
         body: JSON.stringify({ comment: blockComment }),
       });
       if (!res.ok) throw new Error("Failed to block image");
@@ -381,7 +400,11 @@ export default function AdminDashboard() {
                 <RefreshCw className={isLoading ? "animate-spin h-4 w-4 mr-2" : "h-4 w-4 mr-2"} />
                 Refresh
               </Button>
-              <Button onClick={() => setIsLoggedIn(false)} variant="outline">
+              <Button onClick={() => {
+                setIsLoggedIn(false);
+                setToken(null);
+                localStorage.removeItem("adminToken");
+              }} variant="outline">
                 Logout
               </Button>
             </div>

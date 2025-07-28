@@ -6,7 +6,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
   const backendRes = await fetch(`${backendUrl}/api/images/${id}/status`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json",
+      // Forward Authorization header from incoming request
+      Authorization: req.headers.get("authorization") || req.headers.get("Authorization") || ''
+     },
     body: JSON.stringify(body),
   });
   const data = await backendRes.json();

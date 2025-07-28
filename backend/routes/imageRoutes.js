@@ -9,10 +9,14 @@ const { uploadImage, getAllImages, updateImageStatus } = require('../controllers
 const mongoose = require('mongoose');
 const Image = require('../models/Image');
 
+// Upload image (admin only)
 router.post('/upload', auth, upload.single('image'), uploadImage);
+
+// Get all images (admin only)
 router.get('/', auth, getAllImages);
-// PATCH /api/images/:id/status
-router.patch('/:id/status', async (req, res) => {
+
+// PATCH /api/images/:id/status (admin only)
+router.patch('/:id/status', auth, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   if (!['approved', 'rejected', 'pending'].includes(status)) {
@@ -27,8 +31,8 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-// PATCH /api/images/:id/block - block an image with a comment
-router.patch('/:id/block', async (req, res) => {
+// PATCH /api/images/:id/block - block an image with a comment (public, for moderation)
+router.patch('/:id/block', auth, async (req, res) => {
   try {
     console.log('Blocking image:', req.params.id);
     const { comment } = req.body;

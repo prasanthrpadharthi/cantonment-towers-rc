@@ -7,6 +7,7 @@ const imageRoutes = require('./routes/imageRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const imagesPaginatedRoutes = require('./routes/imagesPaginatedRoutes');
+const jwtAuth = require('./middleware/jwtAuth');
 
 const app = express();
 app.use(express.json());
@@ -17,7 +18,9 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 app.use('/api/auth', authRoutes);
+//app.use('/api/images', jwtAuth, imageRoutes);
 app.use('/api/images', imageRoutes);
+//app.use('/api/events', jwtAuth, eventRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/images-paginated', imagesPaginatedRoutes);

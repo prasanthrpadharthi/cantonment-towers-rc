@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 interface Event {
@@ -63,11 +62,15 @@ export default function AdminEventsPage() {
     e.preventDefault();
     setIsLoading(true);
     const method = editingId ? "PATCH" : "POST";
-    const url = editingId ? `/api/events/${editingId}` : "/api/events";
+    const url = editingId ? `/api/events/update/${editingId}` : "/api/events";
+    const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(form),
       });
       if (res.ok) {
@@ -87,8 +90,12 @@ export default function AdminEventsPage() {
 
   async function handleDisable(id: string) {
     setIsLoading(true);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
     try {
-      const res = await fetch(`/api/events/${id}/disable`, { method: "PATCH" });
+      const res = await fetch(`/api/events/${id}/disable`, {
+        method: "PATCH",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (res.ok) {
         toast.success("Event disabled");
         fetchEvents();

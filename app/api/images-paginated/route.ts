@@ -12,17 +12,11 @@ export async function GET(req: NextRequest) {
   backendUrl.searchParams.set("limit", limit);
   if (status) backendUrl.searchParams.set("status", status);
 
-  // Get JWT from cookies (assumes cookie name is 'token')
-  const cookieHeader = req.headers.get("cookie") || "";
-  let token = "";
-  cookieHeader.split(";").forEach((c) => {
-    const [k, v] = c.trim().split("=");
-    if (k === "token") token = v;
-  });
-
+  // Forward Authorization header from incoming request
+  const authHeader = req.headers.get("authorization");
   const backendRes = await fetch(backendUrl.toString(), {
     method: "GET",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: authHeader ? { Authorization: authHeader } : {},
   });
   const data = await backendRes.json();
   return new Response(JSON.stringify(data), {

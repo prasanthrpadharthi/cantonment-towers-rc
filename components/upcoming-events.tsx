@@ -30,15 +30,18 @@ export function UpcomingEvents() {
     async function fetchEvents() {
       setLoading(true);
       const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-      const res = await fetch(`/api/events?from=${from}&_=${Date.now()}`);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      console.log("Authorization Token:", token);
       try {
+        const res = await fetch(`/api/events?from=${from}&_=${Date.now()}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         if (res.ok) {
           const data = await res.json();
           setEvents(data);
         }
         setLoading(false);
-      }
-      catch (error) {
+      } catch (error) {
         console.error("Failed to fetch events:", error);
         setLoading(false);
         toast.error("Failed to load events. Please try again later.");

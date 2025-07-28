@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface Event {
   _id: string;
   title: string;
   description?: string;
   date: string;
+  fromTime?: string;
+  toTime?: string;
   location?: string;
   image?: string;
   registrationUrl?: string;
@@ -58,29 +61,43 @@ export default function AdminEventsPage() {
 
   async function handleSubmit(e: any) {
     e.preventDefault();
-    console.log("Submitting form", form);
-    
     setIsLoading(true);
     const method = editingId ? "PATCH" : "POST";
     const url = editingId ? `/api/events/${editingId}` : "/api/events";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setShowForm(false);
-      setForm({});
-      setEditingId(null);
-      fetchEvents();
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        toast.success(editingId ? "Event updated successfully" : "Event created successfully");
+        setShowForm(false);
+        setForm({});
+        setEditingId(null);
+        fetchEvents();
+      } else {
+        toast.error("Failed to save event");
+      }
+    } catch {
+      toast.error("Error saving event");
     }
     setIsLoading(false);
   }
 
   async function handleDisable(id: string) {
     setIsLoading(true);
-    await fetch(`/api/events/${id}/disable`, { method: "PATCH" });
-    fetchEvents();
+    try {
+      const res = await fetch(`/api/events/${id}/disable`, { method: "PATCH" });
+      if (res.ok) {
+        toast.success("Event disabled");
+        fetchEvents();
+      } else {
+        toast.error("Failed to disable event");
+      }
+    } catch {
+      toast.error("Error disabling event");
+    }
     setIsLoading(false);
   }
 
@@ -103,6 +120,16 @@ export default function AdminEventsPage() {
           <div className="mb-4">
             <label className="block mb-1 font-medium">Date</label>
             <Input type="date" value={form.date ? form.date.slice(0,10) : ""} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+          </div>
+          <div className="mb-4 flex gap-4">
+            <div className="flex-1">
+              <label className="block mb-1 font-medium">From Time</label>
+              <Input type="time" value={form.fromTime || ""} onChange={e => setForm(f => ({ ...f, fromTime: e.target.value }))} />
+            </div>
+            <div className="flex-1">
+              <label className="block mb-1 font-medium">To Time</label>
+              <Input type="time" value={form.toTime || ""} onChange={e => setForm(f => ({ ...f, toTime: e.target.value }))} />
+            </div>
           </div>
           <div className="mb-4">
             <label className="block mb-1 font-medium">Location</label>
@@ -136,7 +163,7 @@ export default function AdminEventsPage() {
               <div className="mb-2 text-sm text-gray-600">{event.date ? new Date(event.date).toLocaleString() : ""}</div>
               <div className="mb-2">{event.description}</div>
               <div className="mb-2 text-xs text-gray-500">{event.location}</div>
-              {event.image && <img src={event.image} alt={event.title} className="w-full h-32 object-cover rounded mb-2" />}
+              {event.image && <img src={event.image} alt={event.title} className="w-full h-48 object-cover rounded mb-2" />}
               <div className="flex gap-2 mt-2">
                 <Button size="sm" variant="outline" onClick={() => handleEdit(event)}>Edit</Button>
                 {event.isActive && new Date(event.date) > new Date() && (

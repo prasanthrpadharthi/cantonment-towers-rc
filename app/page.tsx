@@ -1,3 +1,4 @@
+"use client"
 import { UpcomingEvents } from "@/components/upcoming-events"
 import { SocialFeed } from "@/components/social-feed"
 import { ImageUploader } from "@/components/image-uploader"
@@ -57,11 +58,22 @@ export default function CantonmentTowersSG60() {
                 future.
               </p>
               <div className="flex gap-4">
-                <Button className="bg-red-600 hover:bg-red-700">
+                <Button
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => {
+                    const eventsSection = document.getElementById("events-section");
+                    if (eventsSection) {
+                      eventsSection.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                >
                   <Calendar className="h-4 w-4 mr-2" />
                   View Events
                 </Button>
-                <Button variant="outline">
+                <Button
+                  variant="outline"
+                  onClick={() => window.open("https://go.gov.sg/ctrc-wacommunity", "_blank")}
+                >
                   <Users className="h-4 w-4 mr-2" />
                   Join Committee
                 </Button>
@@ -138,13 +150,6 @@ export default function CantonmentTowersSG60() {
             </Card>
 
             <div className="space-y-6">
-              <Image
-                src="/images/cantonment-towers-aerial.png"
-                alt="Cantonment Towers residential blocks aerial view"
-                width={500}
-                height={300}
-                className="rounded-lg shadow-lg w-full"
-              />
               <Card>
                 <CardHeader>
                   <CardTitle>Community Milestones</CardTitle>

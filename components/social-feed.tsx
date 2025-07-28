@@ -30,7 +30,7 @@ export function SocialFeed() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
                   <Image
-                    src="/images/cantonment-towers.png"
+                    src="/images/rc.jpeg"
                     alt="Cantonment Towers"
                     width={40}
                     height={40}
@@ -81,7 +81,7 @@ export function SocialFeed() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
                   <Image
-                    src="/images/cantonment-towers.png"
+                    src="/images/rc.jpeg"
                     alt="Cantonment Towers"
                     width={40}
                     height={40}
@@ -131,7 +131,7 @@ export function SocialFeed() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
                   <Image
-                    src="/images/cantonment-towers.png"
+                    src="/images/rc.jpeg"
                     alt="Cantonment Towers"
                     width={40}
                     height={40}
@@ -161,56 +161,6 @@ export function SocialFeed() {
                 <div className="flex items-center gap-1">
                   <Share2 className="h-4 w-4" />
                   <span>2 shares</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Facebook Post 4 - New */}
-          <Card className="overflow-hidden">
-            <div className="bg-blue-50 p-3 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
-                  <Image
-                    src="/images/cantonment-towers.png"
-                    alt="Cantonment Towers"
-                    width={40}
-                    height={40}
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="font-medium">Cantonment Towers Residents</p>
-                  <p className="text-xs text-gray-500">July 10, 2025</p>
-                </div>
-              </div>
-            </div>
-            <CardContent className="p-4">
-              <p className="text-sm">
-                Amazing turnout for our Youth Sports Day! 🏀🏸 Our teenagers showed great sportsmanship in basketball
-                and badminton tournaments. Congratulations to all participants and winners!
-              </p>
-              <div className="mt-4 bg-gray-100 rounded-lg overflow-hidden">
-                <Image
-                  src="/images/youth-sports.png"
-                  alt="Youth sports tournament"
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover"
-                />
-              </div>
-              <div className="flex items-center justify-between mt-4 pt-3 border-t text-gray-500 text-sm">
-                <div className="flex items-center gap-1">
-                  <ThumbsUp className="h-4 w-4" />
-                  <span>42</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>15 comments</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Share2 className="h-4 w-4" />
-                  <span>6 shares</span>
                 </div>
               </div>
             </CardContent>

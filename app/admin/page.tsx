@@ -56,8 +56,13 @@ export default function AdminDashboard() {
   const fetchImages = async (status: 'pending' | 'approved' | 'rejected' | 'blocked', page: number, showLoader = true) => {
     if (showLoader) setIsLoading(true);
     try {
-      const res = await fetch(`/api/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const res = await fetch(`/api/images-paginated?page=${page}&limit=${PAGE_SIZE}&status=${status}&_=${Date.now()}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Cache-Control': 'no-store',
+          'Pragma': 'no-cache',
+        },
+        cache: 'no-store',
       });
       if (!res.ok) throw new Error('Failed to fetch images');
       const data = await res.json();

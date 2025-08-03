@@ -22,6 +22,12 @@ export async function GET(req: NextRequest) {
   const data = await backendRes.json();
   return new Response(JSON.stringify(data), {
     status: backendRes.status,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+      "Surrogate-Control": "no-store"
+    },
   });
 }

@@ -31,10 +31,14 @@ export function UpcomingEvents() {
       setLoading(true);
       const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      console.log("Authorization Token:", token);
       try {
         const res = await fetch(`/api/events?from=${from}&_=${Date.now()}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'Cache-Control': 'no-store',
+            'Pragma': 'no-cache',
+          },
+          cache: 'no-store',
         });
         if (res.ok) {
           const data = await res.json();

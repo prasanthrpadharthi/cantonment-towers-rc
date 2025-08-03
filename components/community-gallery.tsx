@@ -25,7 +25,15 @@ export function CommunityGallery() {
       setIsLoading(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const apiBase = backendUrl ? backendUrl : '';
-      const res = await fetch(`/api/images/approved?page=1&limit=24&status=approved`);
+      const res = await fetch(`/api/images/approved?page=1&limit=24&status=approved&_=${Date.now()}`, {
+        headers: {
+          "Content-Type": "application/json",
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        cache: 'no-store', // Always fetch fresh data, bypassing service worker and browser cache
+      });
       if (res.ok) {
         const data = await res.json();
         setApprovedImages(data.images || []);

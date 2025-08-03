@@ -6,17 +6,25 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Don't cache API requests
+  if (url.pathname.startsWith('/api/')) {
+    return fetch(event.request)
+      .then(response => response)
+      .catch(err => console.error('API fetch error:', err));
+  }
+
+  // Fallback to cache for other static assets
   event.respondWith(
-    caches.open('v1').then(cache =>
-      cache.match(event.request).then(response =>
-        response || fetch(event.request).then(networkResponse => {
-          if (event.request.method === 'GET' && networkResponse.ok) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        })
-      )
-    )
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
   );
+});
+
+self.skipWaiting();
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
 });

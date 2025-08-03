@@ -17,7 +17,16 @@ export default function CantonmentTowersSG60() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <Flag className="h-8 w-8" />
+              <button
+                type="button"
+                aria-label="Refresh Application"
+                onClick={() => window.location.reload()}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                tabIndex={0}
+                title="Refresh Application"
+              >
+                <Flag className="h-8 w-8 hover:scale-110 transition-transform duration-150" />
+              </button>
               <div>
                 <h1 className="text-3xl font-bold">Cantonment Towers</h1>
                 <p className="text-red-100">Blocks 11 - 20 Resident Committee</p>

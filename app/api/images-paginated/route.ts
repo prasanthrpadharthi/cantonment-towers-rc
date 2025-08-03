@@ -16,7 +16,12 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const backendRes = await fetch(backendUrl.toString(), {
     method: "GET",
-    headers: authHeader ? { Authorization: authHeader } : {},
+    headers: {
+      ...(authHeader ? { Authorization: authHeader } : {}),
+      'Cache-Control': 'no-store',
+      'Pragma': 'no-cache',
+    },
+    cache: 'no-store',
   });
   const data = await backendRes.json();
   return new Response(JSON.stringify(data), {
